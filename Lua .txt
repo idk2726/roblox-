@@ -1,0 +1,55 @@
+``lua
+-- Configuration
+local AdminUserId = 123456789 -- Replace this with your actual UserId
+
+-- Services
+local Players = game:GetService("Players")
+local DataStoreService = game:GetService("DataStoreService")
+local BanDataStore = DataStoreService:GetDataStore("BanDataStore")
+
+-- Ban Function
+local function banPlayer(player, reason)
+    local success, errorMessage = pcall(function()
+        BanDataStore:SetAsync(player.UserId, reason)
+    end)
+
+    if success then
+        player:Kick("You have been banned from this game. Reason: " .. reason)
+    else
+        warn("Failed to ban player: " .. errorMessage)
+    end
+end
+
+-- Command Handler
+local function onPlayerAdded(player)
+    local function onChatted(message)
+        if message:sub(1, 4) == "!ban" then
+            local args = message:split(" ")
+            if #args < 3 then
+                player:SendNotification("Invalid command format. Use: !ban <playerName> <reason>")
+                return
+            end
+
+            local targetName = args[2]
+            local reason = table.concat(args, " ", 3)
+
+            if player.UserId ~= AdminUserId then
+                player:SendNotification("You don't have permission to use this command.")
+                return
+            end
+
+            local targetPlayer = Players:FindFirstChild(targetName)
+            if targetPlayer then
+                banPlayer(targetPlayer, reason)
+            else
+                player:SendNotification("Player not found.")
+            end
+        end
+    end
+
+    player.Chatted:Connect(onChatted)
+end
+
+-- Connect Events
+Players.PlayerAdded:Connect(onPlayerAdded)
+```
